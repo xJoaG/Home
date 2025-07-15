@@ -13,12 +13,11 @@ import VerifyEmailModal from './components/VerifyEmailModal';
 import VerificationResultPage from './pages/VerificationResultPage';
 import EditProfilePage from './pages/EditProfilePage';
 import PublicProfilePage from './pages/PublicProfilePage';
-import AdminPanelPage from './pages/AdminPanelPage';
-import BanModal from './components/BanModal'; // Import BanModal
+import BanModal from './components/BanModal';
 
 // A new component to handle rendering the popup globally
 const AppContent: React.FC = () => {
-    const { showVerificationPopup, showBanPopup, isBanned } = useAuth(); // Get showBanPopup and isBanned
+    const { showVerificationPopup, showBanPopup, isBanned } = useAuth();
 
     // Determine if the main app content should be interactive
     const isAppContentDisabled = showVerificationPopup || showBanPopup;
@@ -46,8 +45,6 @@ const AppContent: React.FC = () => {
                     {/* Profile Routes */}
                     <Route path="/profile/edit" element={<EditProfilePage />} />
                     <Route path="/profile/:id" element={<PublicProfilePage />} />
-                    {/* Admin Panel Route */}
-                    <Route path="/admin" element={<AdminPanelPage />} />
                 </Routes>
             </div>
         </>

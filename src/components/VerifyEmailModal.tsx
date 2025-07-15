@@ -31,6 +31,15 @@ const VerifyEmailModal: React.FC = () => {
         }
     };
 
+    const handleVerify = () => {
+        // Mock verification - simulate successful verification
+        if (user) {
+            const updatedUser = { ...user, email_verified_at: new Date().toISOString() };
+            localStorage.setItem('mock_user', JSON.stringify(updatedUser));
+            window.location.reload(); // Refresh to update auth state
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg">
             <div className="bg-white/10 rounded-2xl border border-white/20 p-8 max-w-md w-full text-center animate-fade-in">
@@ -45,6 +54,13 @@ const VerifyEmailModal: React.FC = () => {
                 {message && <p className="text-green-400 mb-4">{message}</p>}
 
                 <div className="space-y-4">
+                    <button
+                        onClick={handleVerify}
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center space-x-2"
+                    >
+                        <span>I've Verified My Email</span>
+                    </button>
+                    
                     <button
                         onClick={handleResend}
                         disabled={isResending || countdown > 0}

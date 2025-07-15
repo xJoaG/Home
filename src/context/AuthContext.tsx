@@ -1,25 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import axios from 'axios';
-
-// --- API Client Setup ---
-// Create an axios instance to easily manage API calls
-const apiClient = axios.create({
-    baseURL: 'https://api.cpp-hub.com/api',
-    headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-    }
-});
-
-// Use an interceptor to automatically add the auth token to every request
-apiClient.interceptors.request.use(config => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // --- Type Definitions ---
 interface User {
@@ -31,10 +10,9 @@ interface User {
   nationality: string | null;
   profile_picture_url: string | null;
   is_profile_public: boolean;
-  // Add new profile fields
-  username: string | null; // Username is now part of the user object
-  group: string; // User's group/role
-  banned_until: string | null; // ISO 8601 string or null
+  username: string | null;
+  group: string;
+  banned_until: string | null;
   ban_reason: string | null;
 }
 
@@ -44,20 +22,18 @@ interface AuthContextType {
   register: (data: any) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
-  isVerifying: boolean; // For checking auth on initial page load
+  isVerifying: boolean;
   showVerificationPopup: boolean;
   setShowVerificationPopup: React.Dispatch<React.SetStateAction<boolean>>;
   resendVerificationEmail: () => Promise<void>;
   updateUser: (newUserData: Partial<User>) => void;
-  // New helper functions for roles and banning
   hasPrivilege: (requiredGroups: string | string[]) => boolean;
   isBanned: () => boolean;
-  showBanPopup: boolean; // New: State to control ban modal visibility
-  setShowBanPopup: React.Dispatch<React.SetStateAction<boolean>>; // New: Setter for ban modal
+  showBanPopup: boolean;
+  setShowBanPopup: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // Define the hierarchy of groups for frontend authorization
-// This should match the backend's User::GROUP_HIERARCHY for consistency
 const GROUP_HIERARCHY: { [key: string]: number } = {
     'Basic Plan': 0,
     'Premium Plan': 1,
@@ -66,6 +42,22 @@ const GROUP_HIERARCHY: { [key: string]: number } = {
     'Senior Support': 4,
     'Admin': 5,
     'Owner': 6,
+};
+
+// Mock user data
+const MOCK_USER: User = {
+    id: 1,
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    email_verified_at: new Date().toISOString(),
+    bio: 'Passionate C++ developer with 5 years of experience. Love solving complex problems and learning new technologies.',
+    nationality: 'United States',
+    profile_picture_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=400',
+    is_profile_public: true,
+    username: 'johndoe_cpp',
+    group: 'Premium Plan',
+    banned_until: null,
+    ban_reason: null,
 };
 
 // --- Context Definition ---
@@ -87,9 +79,9 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [isVerifying, setIsVerifying] = useState(true);
+    const [isVerifying, setIsVerifying] = useState(false);
     const [showVerificationPopup, setShowVerificationPopup] = useState(false);
-    const [showBanPopup, setShowBanPopup] = useState(false); // New state for ban modal
+    const [showBanPopup, setShowBanPopup] = useState(false);
 
     // Helper to check if a given user object is currently banned
     const isUserObjectBanned = (userObj: User | null): boolean => {
@@ -97,68 +89,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             return false;
         }
         const bannedUntilDate = new Date(userObj.banned_until);
-        return bannedUntilDate > new Date(); // Check if banned_until is in the future
+        return bannedUntilDate > new Date();
     };
-
-    // On initial app load, check if a token exists and try to fetch the user
-    useEffect(() => {
-        const verifyAuth = async () => {
-            const token = localStorage.getItem('auth_token');
-            if (token) {
-                try {
-                    // Fetch user data including new profile fields
-                    const { data } = await apiClient.get('/user');
-                    setUser(data);
-                    // If the user is fetched but not verified, show the popup
-                    if (!data.email_verified_at) {
-                        setShowVerificationPopup(true);
-                    }
-                    // If user is banned, show ban popup
-                    if (isUserObjectBanned(data)) {
-                        setShowBanPopup(true);
-                    }
-                } catch (error) {
-                    console.error('Auth verification failed', error);
-                    localStorage.removeItem('auth_token');
-                    setUser(null); // Ensure user is null if verification fails
-                    setShowBanPopup(false); // Hide ban popup if auth fails
-                }
-            }
-            setIsVerifying(false);
-        };
-        verifyAuth();
-    }, []);
-
-    // Effect to react to user object changes (e.g., if banned by admin while logged in)
-    useEffect(() => {
-        if (!isVerifying && user) { // Only run after initial verification and if user is logged in
-            if (isUserObjectBanned(user)) {
-                setShowBanPopup(true);
-            } else {
-                setShowBanPopup(false); // Hide if unbanned
-            }
-        }
-    }, [user, isVerifying]); // Dependency on user object and isVerifying status
 
     const login = async (credentials: any) => {
         setIsLoading(true);
         try {
-            const { data } = await apiClient.post('/login', credentials);
-            const { access_token, user: userData } = data;
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
-            localStorage.setItem('auth_token', access_token);
-            setUser(userData);
-
-            // After login, if the user is not verified, show the popup
-            if (!userData.email_verified_at) {
-                setShowVerificationPopup(true);
-            }
-            // After login, if the user is banned, show the ban popup
-            if (isUserObjectBanned(userData)) {
-                setShowBanPopup(true);
-            } else {
-                setShowBanPopup(false); // Ensure it's hidden if not banned
-            }
+            // Mock login - always successful
+            setUser(MOCK_USER);
+            localStorage.setItem('mock_user', JSON.stringify(MOCK_USER));
         } finally {
             setIsLoading(false);
         }
@@ -167,33 +109,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const register = async (data: any) => {
         setIsLoading(true);
         try {
-            // After registration, Laravel sends the verification email.
-            // We don't log the user in; they must verify first.
-            await apiClient.post('/register', data);
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Mock registration - always successful
+            const newUser = {
+                ...MOCK_USER,
+                name: data.name,
+                email: data.email,
+                username: data.username,
+                email_verified_at: null, // New users need to verify
+            };
+            
+            setUser(newUser);
+            localStorage.setItem('mock_user', JSON.stringify(newUser));
         } finally {
             setIsLoading(false);
         }
     };
 
     const logout = () => {
-        localStorage.removeItem('auth_token');
         setUser(null);
         setShowVerificationPopup(false);
-        setShowBanPopup(false); // Hide ban popup on logout
-        // You could also call a backend /logout endpoint here if you have one
+        setShowBanPopup(false);
+        localStorage.removeItem('mock_user');
     };
 
     const resendVerificationEmail = async () => {
-        if (!user) return;
-        // You can set a specific loading state for this button if you want
-        await apiClient.post('/email/verification-notification');
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Mock - always successful
     };
 
-    // Function to update user data in context, useful after profile edits
+    // Function to update user data in context
     const updateUser = (newUserData: Partial<User>) => {
         setUser(prevUser => {
             if (!prevUser) return null;
             const updatedUser = { ...prevUser, ...newUserData };
+            localStorage.setItem('mock_user', JSON.stringify(updatedUser));
+            
             // Re-evaluate ban status if user data is updated
             if (isUserObjectBanned(updatedUser)) {
                 setShowBanPopup(true);
@@ -204,7 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
     };
 
-    // Helper to check if the current user is banned (publicly exposed)
+    // Helper to check if the current user is banned
     const isBanned = (): boolean => {
         return isUserObjectBanned(user);
     };
@@ -229,6 +183,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return userPrivilege >= requiredPrivilege;
     };
 
+    // Initialize user from localStorage on mount
+    React.useEffect(() => {
+        const savedUser = localStorage.getItem('mock_user');
+        if (savedUser) {
+            try {
+                const parsedUser = JSON.parse(savedUser);
+                setUser(parsedUser);
+                
+                // Check verification status
+                if (!parsedUser.email_verified_at) {
+                    setShowVerificationPopup(true);
+                }
+                
+                // Check ban status
+                if (isUserObjectBanned(parsedUser)) {
+                    setShowBanPopup(true);
+                }
+            } catch (error) {
+                console.error('Error parsing saved user:', error);
+                localStorage.removeItem('mock_user');
+            }
+        }
+        setIsVerifying(false);
+    }, []);
 
     const value = {
         user,
@@ -242,14 +220,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         resendVerificationEmail,
         updateUser,
         isBanned,
-        showBanPopup, // Expose new state
-        setShowBanPopup, // Expose new setter
+        showBanPopup,
+        setShowBanPopup,
         hasPrivilege,
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {!isVerifying && children}
+            {children}
         </AuthContext.Provider>
     );
 };

@@ -8,6 +8,20 @@ const VerificationResultPage: React.FC = () => {
 
     useEffect(() => {
         setStatus(searchParams.get('status'));
+        
+        // Mock verification success - update localStorage
+        if (searchParams.get('status') === 'success') {
+            const savedUser = localStorage.getItem('mock_user');
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    user.email_verified_at = new Date().toISOString();
+                    localStorage.setItem('mock_user', JSON.stringify(user));
+                } catch (error) {
+                    console.error('Error updating user verification status:', error);
+                }
+            }
+        }
     }, [searchParams]);
 
     const renderContent = () => {
@@ -21,7 +35,7 @@ const VerificationResultPage: React.FC = () => {
                             Thank you for verifying your email. You can now log in to access your account.
                         </p>
                         <Link to="/" className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-3 px-8 rounded-xl">
-                            Go to Login
+                            Go to Home
                         </Link>
                     </>
                 );
@@ -34,7 +48,7 @@ const VerificationResultPage: React.FC = () => {
                             Your email address has already been verified. You can log in at any time.
                         </p>
                          <Link to="/" className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-3 px-8 rounded-xl">
-                            Go to Login
+                            Go to Home
                         </Link>
                     </>
                 );

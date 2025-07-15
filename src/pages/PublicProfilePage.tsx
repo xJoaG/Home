@@ -5,23 +5,6 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ParticleNetwork from '../components/ParticleNetwork';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-
-const apiClient = axios.create({
-    baseURL: 'https://api.cpp-hub.com/api',
-    headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-    }
-});
-
-apiClient.interceptors.request.use(config => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
 
 interface PublicProfileData {
     id: number;
@@ -39,6 +22,47 @@ interface PublicProfileData {
     message?: string;
 }
 
+// Mock profile data
+const MOCK_PROFILES: { [key: string]: PublicProfileData } = {
+    '1': {
+        id: 1,
+        username: 'johndoe_cpp',
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+        bio: 'Passionate C++ developer with 5 years of experience. Love solving complex problems and learning new technologies.',
+        nationality: 'United States',
+        profile_picture_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=400',
+        is_profile_public: true,
+        group: 'Premium Plan',
+        banned_until: null,
+        ban_reason: null,
+    },
+    '2': {
+        id: 2,
+        username: 'sarah_dev',
+        name: 'Sarah Wilson',
+        bio: 'Software engineer specializing in systems programming and performance optimization.',
+        nationality: 'Canada',
+        profile_picture_url: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=400',
+        is_profile_public: true,
+        group: 'Basic Plan',
+        banned_until: null,
+        ban_reason: null,
+    },
+    '3': {
+        id: 3,
+        username: 'mike_coder',
+        bio: null,
+        nationality: null,
+        profile_picture_url: null,
+        is_profile_public: false,
+        group: 'Premium Plan',
+        banned_until: null,
+        ban_reason: null,
+        is_private: true,
+    }
+};
+
 const PublicProfilePage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { user: currentUser, hasPrivilege } = useAuth();
@@ -52,39 +76,36 @@ const PublicProfilePage: React.FC = () => {
             setLoading(true);
             setError(null);
             setIsTargetUserBanned(false);
+            
             try {
-                const response = await apiClient.get(`/users/${id}/profile`);
-                setProfile(response.data);
-                if (response.data.banned_until) {
-                    const bannedUntilDate = new Date(response.data.banned_until);
-                    if (bannedUntilDate > new Date()) {
-                        setIsTargetUserBanned(true);
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (id && MOCK_PROFILES[id]) {
+                    const mockProfile = MOCK_PROFILES[id];
+                    
+                    // Check if profile is private
+                    if (mockProfile.is_private && (!currentUser || currentUser.id !== mockProfile.id)) {
+                        setError('This profile is private.');
+                        setProfile(null);
+                        return;
                     }
+                    
+                    // Check if user is banned
+                    if (mockProfile.banned_until) {
+                        const bannedUntilDate = new Date(mockProfile.banned_until);
+                        if (bannedUntilDate > new Date()) {
+                            setIsTargetUserBanned(true);
+                        }
+                    }
+                    
+                    setProfile(mockProfile);
+                } else {
+                    setError('User not found.');
+                    setProfile(null);
                 }
             } catch (err: any) {
-                console.error('Failed to fetch public profile:', err);
-                if (err.response?.status === 403) {
-                    if (err.response?.data?.is_private) {
-                        setError('This profile is private.');
-                    } else if (err.response?.data?.message && err.response?.data?.banned_until) {
-                        setIsTargetUserBanned(true);
-                        setProfile({
-                            id: 0,
-                            username: id,
-                            bio: null, nationality: null, profile_picture_url: null, is_profile_public: false, group: 'Unknown',
-                            banned_until: err.response.data.banned_until,
-                            ban_reason: err.response.data.ban_reason,
-                            message: err.response.data.message
-                        });
-                        setError(null);
-                    } else {
-                        setError('Access Denied.');
-                    }
-                } else if (err.response?.status === 404) {
-                    setError('User not found.');
-                } else {
-                    setError('Failed to load profile. Please try again later.');
-                }
+                setError('Failed to load profile. Please try again later.');
                 setProfile(null);
             } finally {
                 setLoading(false);
@@ -171,17 +192,6 @@ const PublicProfilePage: React.FC = () => {
                                 </div>
                                 <h2 className="text-3xl font-bold text-white mb-4">Profile Unavailable</h2>
                                 <p className="text-red-400 text-xl mb-8">{error}</p>
-                                
-                                {isTargetUserBanned && profile && (
-                                    <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-8 max-w-md mx-auto mb-8">
-                                        <div className="flex items-center justify-center space-x-3 mb-4">
-                                            <Ban className="h-6 w-6 text-red-400" />
-                                            <h3 className="text-red-400 font-bold text-xl">User Banned</h3>
-                                        </div>
-                                        <p className="text-red-300 mb-2">Reason: {profile.ban_reason}</p>
-                                        <p className="text-red-300 text-sm">Until: {profile.banned_until ? new Date(profile.banned_until).toLocaleString() : 'Permanent'}</p>
-                                    </div>
-                                )}
                                 
                                 <Link 
                                     to="/" 
@@ -285,22 +295,6 @@ const PublicProfilePage: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Ban Status Alert */}
-                                {isTargetUserBanned && (
-                                    <div className="p-6 border-b border-white/10">
-                                        <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-6 flex items-center space-x-4">
-                                            <div className="p-3 bg-red-500/30 rounded-xl">
-                                                <Ban className="h-8 w-8 text-red-400" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-red-400 font-bold text-xl">Account Restricted</h3>
-                                                <p className="text-red-300 text-lg">Reason: {profile.ban_reason}</p>
-                                                <p className="text-red-300">Until: {profile.banned_until ? new Date(profile.banned_until).toLocaleString() : 'Permanent'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Content Grid */}

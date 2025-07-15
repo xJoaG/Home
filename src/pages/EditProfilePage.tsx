@@ -5,20 +5,6 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ParticleNetwork from '../components/ParticleNetwork';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-
-const apiClient = axios.create({
-    baseURL: 'https://api.cpp-hub.com/api',
-    headers: {},
-});
-
-apiClient.interceptors.request.use(config => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
 
 const ALL_GROUPS = ['Basic Plan', 'Premium Plan', 'Junior Support', 'Support', 'Senior Support', 'Admin', 'Owner'];
 
@@ -123,41 +109,28 @@ const EditProfilePage: React.FC = () => {
         setLoading(true);
         setMessage(null);
 
-        const dataToSend = new FormData();
-        dataToSend.append('_method', 'PUT');
-
-        dataToSend.append('name', formData.name);
-        dataToSend.append('username', formData.username);
-        dataToSend.append('bio', formData.bio);
-        dataToSend.append('nationality', formData.nationality);
-        dataToSend.append('is_profile_public', formData.is_profile_public ? '1' : '0');
-
-        if (profilePictureFile) {
-            dataToSend.append('profile_picture', profilePictureFile);
-        } else if (clearProfilePicture) {
-            dataToSend.append('clear_profile_picture', '1');
-        }
-
         try {
-            const response = await apiClient.post('/user/profile', dataToSend, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            updateUser(response.data.user);
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Mock update - always successful
+            const updatedData = {
+                ...formData,
+                profile_picture_url: clearProfilePicture ? null : (profilePicturePreview || user?.profile_picture_url),
+            };
+            
+            updateUser(updatedData);
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
             setClearProfilePicture(false);
             setProfilePictureFile(null);
         } catch (error: any) {
-            console.error('Failed to update profile:', error);
-            const errorMessage = error.response?.data?.message || (error.response?.data?.errors ? Object.values(error.response.data.errors).flat().join(' ') : 'Failed to update profile. Please try again.');
-            setMessage({ type: 'error', text: errorMessage });
+            setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
         } finally {
             setLoading(false);
         }
     };
 
-    // Admin action handlers
+    // Mock admin action handlers
     const handleBanUser = async (permanent: boolean = false) => {
         if (!targetUserId || (!permanent && !bannedUntil) || !banReason) {
             setAdminActionMessage({ type: 'error', text: 'Please fill all ban fields.' });
@@ -166,21 +139,14 @@ const EditProfilePage: React.FC = () => {
         setAdminActionLoading(true);
         setAdminActionMessage(null);
         try {
-            const data: { banned_until?: string; ban_reason: string } = {
-                ban_reason: banReason,
-            };
-            if (!permanent) {
-                data.banned_until = bannedUntil;
-            }
-            await apiClient.post(`/admin/users/${targetUserId}/ban`, data);
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
             setAdminActionMessage({ type: 'success', text: `User ${targetUserId} banned successfully!` });
             setTargetUserId('');
             setBanReason('');
             setBannedUntil('');
         } catch (error: any) {
-            console.error('Failed to ban user:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to ban user. Check privileges or user ID.';
-            setAdminActionMessage({ type: 'error', text: errorMessage });
+            setAdminActionMessage({ type: 'error', text: 'Failed to ban user. Please try again.' });
         } finally {
             setAdminActionLoading(false);
         }
@@ -194,13 +160,12 @@ const EditProfilePage: React.FC = () => {
         setAdminActionLoading(true);
         setAdminActionMessage(null);
         try {
-            await apiClient.post(`/admin/users/${targetUserId}/unban`);
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
             setAdminActionMessage({ type: 'success', text: `User ${targetUserId} unbanned successfully!` });
             setTargetUserId('');
         } catch (error: any) {
-            console.error('Failed to unban user:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to unban user. Check privileges or user ID.';
-            setAdminActionMessage({ type: 'error', text: errorMessage });
+            setAdminActionMessage({ type: 'error', text: 'Failed to unban user. Please try again.' });
         } finally {
             setAdminActionLoading(false);
         }
@@ -214,14 +179,13 @@ const EditProfilePage: React.FC = () => {
         setAdminActionLoading(true);
         setAdminActionMessage(null);
         try {
-            await apiClient.post(`/admin/users/${targetUserId}/group`, { group: newGroup });
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
             setAdminActionMessage({ type: 'success', text: `User ${targetUserId} group updated to ${newGroup}!` });
             setTargetUserId('');
             setNewGroup('');
         } catch (error: any) {
-            console.error('Failed to update group:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to update group. Check privileges or user ID.';
-            setAdminActionMessage({ type: 'error', text: errorMessage });
+            setAdminActionMessage({ type: 'error', text: 'Failed to update group. Please try again.' });
         } finally {
             setAdminActionLoading(false);
         }
@@ -567,7 +531,7 @@ const EditProfilePage: React.FC = () => {
                         </form>
                     </div>
 
-                    {/* Admin Tools Section */}
+                    {/* Admin Tools Section - Mock functionality */}
                     {(canBan || canChangeGroup) && (
                         <div className="glass-morphism rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
                             <div className="bg-gradient-to-r from-red-500/10 via-orange-500/10 to-yellow-500/10 p-8 border-b border-white/10">
@@ -575,7 +539,7 @@ const EditProfilePage: React.FC = () => {
                                     <Shield className="h-6 w-6 text-red-400" />
                                     <h2 className="text-2xl font-bold text-white">Administrative Tools</h2>
                                 </div>
-                                <p className="text-gray-300 mt-2">Manage user permissions and moderation actions</p>
+                                <p className="text-gray-300 mt-2">Manage user permissions and moderation actions (Demo Mode)</p>
                             </div>
 
                             <div className="p-8 space-y-8">

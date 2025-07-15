@@ -16,7 +16,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' })
         password: '',
         password_confirmation: '',
         name: '',
-        username: '', // Add username to form data
+        username: '',
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const { login, register, isLoading } = useAuth();
@@ -27,8 +27,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' })
         else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
         if (!formData.password) newErrors.password = 'Password is required';
         else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
-        if (!isLogin && !formData.name) newErrors.name = 'Full Name is required'; // Changed message
-        if (!isLogin && !formData.username) newErrors.username = 'Username is required'; // New validation
+        if (!isLogin && !formData.name) newErrors.name = 'Full Name is required';
+        if (!isLogin && !formData.username) newErrors.username = 'Username is required';
         else if (!isLogin && formData.username.length < 3) newErrors.username = 'Username must be at least 3 characters';
         if (!isLogin && formData.password !== formData.password_confirmation) newErrors.password_confirmation = 'Passwords do not match';
         setErrors(newErrors);
@@ -46,24 +46,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' })
             } else {
                 await register({
                     name: formData.name,
-                    username: formData.username, // Include username in registration data
+                    username: formData.username,
                     email: formData.email,
                     password: formData.password,
                     password_confirmation: formData.password_confirmation
                 });
-                setRegistrationSuccess(true); // Show success message
+                setRegistrationSuccess(true);
             }
         } catch (error: any) {
-            if (error.response?.data?.errors) {
-                const backendErrors = error.response.data.errors;
-                const newErrors: Record<string, string> = {};
-                for (const key in backendErrors) {
-                    newErrors[key] = backendErrors[key][0];
-                }
-                setErrors(newErrors);
-            } else {
-                setErrors({ submit: 'Authentication failed. Please check your credentials or try again.' });
-            }
+            setErrors({ submit: 'Authentication failed. Please check your credentials or try again.' });
         }
     };
 
@@ -84,7 +75,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' })
         setIsLogin(!isLogin);
         setErrors({});
         setRegistrationSuccess(false);
-        setFormData({ email: '', password: '', password_confirmation: '', name: '', username: '' }); // Reset username on mode toggle
+        setFormData({ email: '', password: '', password_confirmation: '', name: '', username: '' });
     };
 
     if (registrationSuccess) {
@@ -96,9 +87,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' })
                         <Check className="h-8 w-8 text-white" />
                     </div>
                     <h2 className="text-3xl font-black text-white mb-3">Registration Successful!</h2>
-                    <p className="text-gray-300 text-lg mb-8">Please check your email inbox and click the link to verify your account.</p>
+                    <p className="text-gray-300 text-lg mb-8">Welcome to C++ Hub! You can now start learning.</p>
                     <button onClick={onClose} className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-3 rounded-xl">
-                        Got it!
+                        Get Started!
                     </button>
                 </div>
             </div>
@@ -125,7 +116,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, initialMode = 'login' })
                             {errors.name && <p className="text-red-400 text-sm mt-2">{errors.name}</p>}
                         </div>
                     )}
-                    {!isLogin && ( // New username field
+                    {!isLogin && (
                         <div className="animate-slide-up">
                             <label className="block text-sm font-bold text-gray-300 mb-2">Username</label>
                             <div className="relative group"><User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-400" />
